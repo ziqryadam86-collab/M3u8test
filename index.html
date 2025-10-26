@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>M3U8 Test Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #fff; 
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        .player-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        video {
+            width: 100%;
+            max-width: 800px;
+            border: 3px solid #333;
+            border-radius: 10px;
+        }
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background: #2c3e50;
+        }
+        .url-input {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background: #2c3e50;
+            color: white;
+        }
+        .load-btn {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="player-container">
+        <h1>🎬 M3U8 Stream Test Player</h1>
+        
+        <div class="status" id="status">Ready to load video...</div>
+        
+        <input type="text" class="url-input" id="urlInput" 
+               placeholder="Enter M3U8 URL or use default" 
+               value="myplaylist.m3u8">
+        <button class="load-btn" onclick="loadVideo()">Load Video</button>
+        
+        <video id="video" controls></video>
+        
+        <p>Powered by HLS.js & GitHub Pages</p>
+    </div>
+
+    <script>
+        let hls;
+        
+        function loadVideo() {
+            const video = document.getElementById('video');
+            const status = document.getElementById('status');
+            const urlInput = document.getElementById('urlInput');
+            const videoUrl = urlInput.value || 'myplaylist.m3u8';
+            
+            // Destroy previous HLS instance
+            if (hls) {
+                hls.destroy();
+            }
+            
+            status.innerHTML = 'Loading video...';
+            
+            if (Hls.isSupported()) {
+                hls = new Hls();
+                hls.loadSource(videoUrl);
+                hls.attachMedia(video);
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    status.innerHTML = '✅ Video loaded successfully!';
+                    video.play().catch(e => {
+                        status.innerHTML = '✅ Video loaded - Click play to start';
+                    });
+                });
+                
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    console.error('Error:', data);
+                    if (data.fatal) {
+                        switch(data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                status.innerHTML = '❌ Network error - File not found or connection issue';
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                status.innerHTML = '❌ Media error - Video format issue';
+                                break;
+                            default:
+                                status.innerHTML = '❌ Error loading video';
+                                break;
+                        }
+                    }
+                });
+                
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                status.innerHTML = 'Using native HLS support...';
+                video.src = videoUrl;
+                video.addEventListener('loadedmetadata', function() {
+                    status.innerHTML = '✅ Video loaded!';
+                    video.play().catch(e => {
+                        status.innerHTML = '✅ Video loaded - Click play to start';
+                    });
+                });
+            } else {
+                status.innerHTML = '❌ HLS not supported in your browser';
+            }
+        }
+        
+        // Auto load on page load
+        window.onload = loadVideo;
+    </script>
+</body>
+</html>
